@@ -1,8 +1,10 @@
 #![no_std]
 #![no_main]
 
-use core::panic::PanicInfo;
 use core::arch::asm;
+use core::panic::PanicInfo;
+
+mod console;
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -32,5 +34,6 @@ pub fn sys_exit(xstate: i32) -> isize {
 
 #[unsafe(no_mangle)]
 extern "C" fn _start() {
+    println!("Hello, world!");
     sys_exit(9);
 }
