@@ -10,5 +10,5 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[unsafe(no_mangle)]
 extern "C" fn _start() {
-    loop {}
+    // 先观察没有退出系统调用时返回入口函数的结果。
 }
