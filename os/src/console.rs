@@ -1,16 +1,13 @@
+use crate::sbi::console_putchar;
 use core::fmt::{self, Write};
-
-const SYSCALL_WRITE: usize = 64;
-
-pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
-    crate::syscall(SYSCALL_WRITE, [fd, buffer.as_ptr() as usize, buffer.len()])
-}
 
 struct Stdout;
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        sys_write(1, s.as_bytes());
+        for c in s.chars() {
+            console_putchar(c as usize);
+        }
         Ok(())
     }
 }

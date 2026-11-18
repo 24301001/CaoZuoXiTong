@@ -1,38 +1,53 @@
 #![no_std]
 #![no_main]
 
-use core::arch::asm;
-use core::panic::PanicInfo;
+#[macro_use]
 mod console;
+mod lang_items;
+mod sbi;
 
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
-}
+use core::arch::global_asm;
 
-const SYSCALL_EXIT: usize = 93;
+global_asm!(include_str!("entry.asm"));
 
-fn syscall(id: usize, args: [usize; 3]) -> isize {
-    let mut ret: isize;
-    unsafe {
-        asm!(
-            "ecall",
-            in("x10") args[0],
-            in("x11") args[1],
-            in("x12") args[2],
-            in("x17") id,
-            lateout("x10") ret,
-        );
+fn clear_bss() {
+    unsafe extern "C" {
+        fn sbss();
+        fn ebss();
     }
-    ret
-}
-
-pub fn sys_exit(xstate: i32) -> isize {
-    syscall(SYSCALL_EXIT, [xstate as usize, 0, 0])
+    let start = sbss as *const () as usize;
+    let end = ebss as *const () as usize;
+    (start..end).for_each(|addr| unsafe {
+        (addr as *mut u8).write_volatile(0)
+    });
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn _start() {
+pub extern "C" fn rust_main() -> ! {
+    unsafe extern "C" {
+        fn stext();
+        fn etext();
+        fn srodata();
+        fn erodata();
+        fn sdata();
+        fn edata();
+        fn sbss();
+        fn ebss();
+        fn boot_stack();
+        fn boot_stack_top();
+    }
+
+    clear_bss();
     println!("Hello, world!");
-    sys_exit(9);
+    println!(".text [{:#x}, {:#x})", stext as *const () as usize, etext as *const () as usize);
+    println!(".rodata [{:#x}, {:#x})", srodata as *const () as usize, erodata as *const () as usize);
+    println!(".data [{:#x}, {:#x})", sdata as *const () as usize, edata as *const () as usize);
+    println!(
+        "boot_stack [{:#x}, {:#x})",
+        boot_stack as *const () as usize,
+        boot_stack_top as *const () as usize
+    );
+    println!(".bss [{:#x}, {:#x})", sbss as *const () as usize, ebss as *const () as usize);
+    println!("Hello, world!");
+    panic!("Shutdown machine!");
 }
